@@ -1,0 +1,24 @@
+timestamp: 2012-10-22T23:06:09.949365
+CREATE TABLE error(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    app CHAR(512),
+    error_timestamp CHAR(512),
+    remote_addr CHAR(512),
+    error CHAR(512),
+    traceback CHAR(512),
+    status TEXT,
+    file_content TEXT
+);
+success!
+timestamp: 2012-10-22T23:06:34.764449
+CREATE TABLE junk(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ts CHAR(512)
+);
+success!
+timestamp: 2012-10-23T14:27:30.047871
+CREATE TABLE person(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name CHAR(512)
+);
+success!
