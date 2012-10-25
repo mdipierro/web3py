@@ -158,3 +158,4 @@ class safe(TAG):
 
     def as_html(self):
         return sanitize(self.text, self.allowed_tags.keys(), self.allowed_tags)
+

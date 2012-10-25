@@ -533,7 +533,7 @@ class Listener(Thread):
     def start(self):
         if not self.ready:
             self.err_log.warning('Listener started when not ready.')
-            return
+            sys.exit(1)
 
         if self.thread is not None and self.thread.isAlive():
             self.err_log.warning('Listener already running.')
@@ -1192,7 +1192,7 @@ re_REQUEST_LINE = re.compile(r"""^
     (?P<host>[^/]+)                                          # Host
 )? #
 (?P<path>(\*|/[^ \?]*))                                      # Path
-(\? (?P<query_string>[^ ]+))?                                # Query String
+(\? (?P<query_string>[^ ]*))?                                # Query String
 \                                                            # (single space)
 (?P<protocol>HTTPS?/1\.[01])                                 # Protocol
 $

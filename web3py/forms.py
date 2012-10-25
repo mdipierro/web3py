@@ -1,5 +1,6 @@
 from .helpers import tag, TAG
 from .storage import Storage
+from .current import current
 
 __all__ = ['Form','DALForm']
 
@@ -78,7 +79,7 @@ class Form(TAG):
         self.accepted = False
         self.id_prefix = ''
 
-    def process(self, current, keepvalues = False):
+    def process(self, keepvalues = False):
         if not self.processed:
             if self.attributes['_method']=='POST':
                 self.input_vars = Storage(current.post_vars)

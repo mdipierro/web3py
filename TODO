@@ -1,9 +1,11 @@
+BEAUTIFY and MENU
 sessions
-reverse routing
 reloading of module
-static file versioning
-zipping and minification
 serializars
 markmin and autolinks
 tools
 admin and appadmin
+
+problem:
+INFO:root:  exposing 'test.main.index' as '/junk'
+INFO:root:  exposing 'welcome.main.index' as '/welcome/index(\.\w+)?'

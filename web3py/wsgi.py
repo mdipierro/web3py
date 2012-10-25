@@ -11,10 +11,7 @@ from .rocket import Rocket
 from .http import HTTP
 from .expose import expose
 from .dal import DAL, Field
-from .current import Current
 from .stream import stream_file_handler
-
-logging.basicConfig(level=logging.INFO)
 
 GLOBAL = dict()
 REGEX_STATIC = re.compile('^/(?P<a>.*?)/static/(?P<v>_\d+\.\d+\.\d+/)?(?P<f>.*?)$')
@@ -23,7 +20,9 @@ REGEX_RANGE = re.compile('^\s*(?P<start>\d*).*(?P<stop>\d*)\s*$')
 
 def dynamic_handler(environ, start_response):
     try:
-        current = expose.run(Current(environ))
+        from .current import current # must be here to avoig global
+        current.initialize(environ) # used by run_dipatcher below
+        expose.run_dispatcher()
         http = HTTP(current.status_code,current.output,
                     headers=current.response_headers,
                     cookies=current.response_cookies)

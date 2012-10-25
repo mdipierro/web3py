@@ -3,26 +3,24 @@ import cgi
 import logging
 import cgi
 import platform
-import urllib
+import threading
 
 from .storage import Storage
 from .contenttype import contenttype
-from .utils import secure_loads, secure_dumps
 from .languages import translator
-from .expose import expose
 
 if platform.python_version()[0] == '3':
     from http.cookies import SimpleCookie # python 3
 else:
     from Cookie import SimpleCookie # python 2
 
-__all__ = ['Current']
+__all__ = ['current']
 
 # global object exposed to apps
 
-class Current(object):
+class Current(threading.local):
 
-    def __init__(self,environ):
+    def initialize(self,environ):
         self.environ = environ
         self.status_code = 200    
         self.scheme = 'https' if \
@@ -39,14 +37,6 @@ class Current(object):
         self.extension = (self.path_info.rsplit('.',1)+['html'])[1]
         self.response_cookies = SimpleCookie()
         self.response_headers = {'Content-Type':contenttype(self.path_info,'text/html')}
-        # lazy attributes
-        self._get_vars = None
-        self._post_vars = None
-        self._cache = None
-        self._session = None
-        self._request_cookies = None
-        self._t = None
-        self._env = None
 
     def _parse_get_vars(self):
         query_string = self.environ.get('QUERY_STRING','')
@@ -75,73 +65,45 @@ class Current(object):
     @property
     def get_vars(self):       
         " lazily parse the query string into get_vars "
-        if self._get_vars is None:
+        if not hasattr(self,'_get_vars'):
             self._parse_get_vars()
         return self._get_vars
     @property
     def post_vars(self):
         " lazily parse the request body into post_vars "
-        if self._post_vars is None:
+        if not hasattr(self,'_post_vars'):
             self._parse_post_vars()
         return self._post_vars
     @property
     def env(self):
-        " lazily parse the invironment variables into a storage, for backward compatibility, it is slow "
-        self._env = self._env or Storage((k.lower().replace('.','_'),v) for (k,v) in self.environ.iteritems())
+        """
+        lazily parse the invironment variables into a storage, 
+        for backward compatibility, it is slow 
+        """
+        if not hasattr(self,'_env'):
+            self._env = Storage((k.lower().replace('.','_'),v) 
+                                for (k,v) in self.environ.iteritems())
         return self._env
     @property
     def session(self):
         " lazily create the session "
-        if self._session is None:
-            self._session = Session(self)
+        if not hasattr(self,'_session'):
+            self._session = Storage()
         return self._session
     @property
     def request_cookies(self):       
         " lazily parse the request cookies "
-        if self._request_cookies is None:
+        if not hasattr(self,'_request_cookies'):
             self._request_cookies = SimpleCookie()
             self._request_cookies.load(self.environ.get('HTTP_COOKIE',''))
         return self._request_cookies
     @property
     def T(self):
         " lazily allocate the T object "
-        if self._t is None:
+        if not hasattr(self,'_t'):
             self._t = translator(os.path.join('apps',self.application,'languages'),
                                  self.environ.get('HTTP_ACCEPT_LANGUAGE'))
         return self._t
 
-    def url(self,path,extension=None,args=None,vars=None,anchor=None,sign=None,scheme=None,host=None):
-        q = urllib.quote
-        if not '.' in path:
-            path = self.name.rsplit('.',1)[0]+'.'+path
-        elif path.startswith('.'):
-            path = self.application + path
-        try:
-            url = expose.routes_out[path]
-        except KeyError:
-            raise RuntimeError('invalid url("%s",...)' % path)        
-        if args is not None:
-            if not instance(args,(list,tuple)):
-                args = (args,)
-            url = url + '/' + '/'.join(q(a) for a in args)
-        if extension:
-            url = url + '.' + extension
-        if sign:
-            if not vars:
-                vars = dict()
-            vars['_signature'] = sign(url)
-        if vars:
-            url = url + '?' + '&'.join('%s=%s' % (q(k),q(v)) for k,v in vars.iteritems())
-        if scheme is True:
-            scheme = self.scheme
-        if scheme:
-            host = host or self.hostname
-            url = '%s/%s%s' % (scheme, host, url)
-        return url
-            
 
-# session object
-
-class Session(Storage):
-    def __init__(self,current):
-        pass
+current = Current()

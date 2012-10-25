@@ -5,7 +5,7 @@ db = DAL('sqlite://storage.test')
 db.define_table('person',Field('name',requires=IS_NOT_EMPTY()))
 
 @expose()
-def index(current):
+def index():
     form = Form(Field('name',requires=IS_NOT_EMPTY()),
                 Field('area','text'),
                 Field('check','boolean',default=True),
@@ -13,30 +13,30 @@ def index(current):
                 Field('weight','double'),
                 Field('a','time'),
                 Field('b','date'),
-                Field('c','datetime')).process(current)
+                Field('c','datetime')).process()
     message = form.vars.name or ''
     return locals()
 
 @expose(template='index.html')
-def index1(current):
-    form = DALForm(db.person, record_id=1).process(current)
+def index1():
+    form = DALForm(db.person, record_id=1).process()
     db.commit()
     message = form.vars.name
     return locals()
 
 @expose(cache_expire=10)
-def timer(current):
+def timer():
     import time
     return time.ctime()
 
 @expose()
-def try_redirect1(current):
-    HTTP.redirect(current.url('welcome.main.index'))
+def try_redirect1():
+    HTTP.redirect(url('welcome.main.index'))
 
 @expose()
-def try_redirect2(current):
-    HTTP.redirect(current.url('.main.index'))
+def try_redirect2():
+    HTTP.redirect(url('.main.index'))
 
 @expose()
-def try_redirect3(current):
-    HTTP.redirect(current.url('index'))
+def try_redirect3():
+    HTTP.redirect(url('index'))

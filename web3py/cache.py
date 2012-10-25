@@ -107,7 +107,6 @@ class cache(object):
             extra += ':%s' % repr(a)
         if self.cache_vars:
             extra += ':%s' % repr(b)
-            print self.key+extra, self.dt
         func = lambda a=a,b=b: self.func(*a,**b)
         return self.cache(self.key + extra, func, self.dt)
 
