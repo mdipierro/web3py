@@ -28,3 +28,15 @@ def index1(current):
 def timer(current):
     import time
     return time.ctime()
+
+@expose()
+def try_redirect1(current):
+    HTTP.redirect(current.url('welcome.main.index'))
+
+@expose()
+def try_redirect2(current):
+    HTTP.redirect(current.url('.main.index'))
+
+@expose()
+def try_redirect3(current):
+    HTTP.redirect(current.url('index'))

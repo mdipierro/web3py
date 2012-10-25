@@ -3,6 +3,8 @@ from web3py import expose, run, tag, cat, safe, HTTP, DAL, Field, Form
 db = DAL('sqlite://storage.test')
 db.define_table('junk',Field('ts'))
 
+expose.prefix = '/junk'
+
 @expose('/index')
 def index(current):
     return 'hello world'

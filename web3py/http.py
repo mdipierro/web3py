@@ -78,7 +78,10 @@ class HTTP(Exception):
         raise HTTP(status_code, headers=dict(Location=location))
 
     class stream(object):
-        def __init__(self, filename):
+        def __init__(self, filename, version = None, headers = None):
             self.filename = filename
+            self.version = version
+            self.stream = stream
+            self.headers = headers or dict()
 
 
