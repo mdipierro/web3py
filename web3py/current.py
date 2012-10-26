@@ -21,6 +21,7 @@ __all__ = ['current']
 class Current(threading.local):
 
     def initialize(self,environ):
+        self.__dict__.clear()
         self.environ = environ
         self.status_code = 200    
         self.scheme = 'https' if \
@@ -37,6 +38,7 @@ class Current(threading.local):
         self.extension = (self.path_info.rsplit('.',1)+['html'])[1]
         self.response_cookies = SimpleCookie()
         self.response_headers = {'Content-Type':contenttype(self.path_info,'text/html')}
+        self.session = None
 
     def _parse_get_vars(self):
         query_string = self.environ.get('QUERY_STRING','')
@@ -45,7 +47,7 @@ class Current(threading.local):
         for (key, value) in get_vars.iteritems():
             if isinstance(value,list) and len(value)==1:
                 get_vars[key] = value[0]
-
+                
     def _parse_post_vars(self):
         environ = self.environ
         post_vars = self._post_vars = Storage()
@@ -84,12 +86,6 @@ class Current(threading.local):
             self._env = Storage((k.lower().replace('.','_'),v) 
                                 for (k,v) in self.environ.iteritems())
         return self._env
-    @property
-    def session(self):
-        " lazily create the session "
-        if not hasattr(self,'_session'):
-            self._session = Storage()
-        return self._session
     @property
     def request_cookies(self):       
         " lazily parse the request cookies "

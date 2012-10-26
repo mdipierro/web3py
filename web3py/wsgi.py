@@ -1,12 +1,13 @@
 import os
 import sys
 import re
-import traceback
 import logging
 import time
 import datetime
 import optparse
 
+from .cleaners import smart_traceback
+from .fancy_pickle import dumps
 from .rocket import Rocket
 from .http import HTTP
 from .expose import expose
@@ -16,7 +17,6 @@ from .stream import stream_file_handler
 GLOBAL = dict()
 REGEX_STATIC = re.compile('^/(?P<a>.*?)/static/(?P<v>_\d+\.\d+\.\d+/)?(?P<f>.*?)$')
 REGEX_RANGE = re.compile('^\s*(?P<start>\d*).*(?P<stop>\d*)\s*$')
-
 
 def dynamic_handler(environ, start_response):
     try:
@@ -63,15 +63,15 @@ def error_handler(environ, start_response):
     try:
         return static_handler(environ, start_response)
     except Exception:
+        tb, frames = smart_traceback()
         error = str(sys.exc_info()[1])
-        tb = traceback.format_exc()
         logging.error(tb)
         db = GLOBAL['db']
         try:
             ticket = db.error.insert(
                 app=app,error_timestamp=now,
                 remote_addr=environ['REMOTE_ADDR'],
-                error=error,traceback=tb)
+                traceback=tb,frames=dumps(frames))
             db.commit()
             body = '<html><body>ticket-%s</body></html>' % ticket 
         except Exception:
@@ -83,38 +83,14 @@ def error_handler(environ, start_response):
         dt = time.time() - t0
         logging.info('%s %s %s' % (environ['REMOTE_ADDR'], environ['PATH_INFO'], dt))
 
-    
-class FileSubset(object):
-    """ class needed to handle RANGE currents """
-    def __init__(self, stream, start, stop):
-        self.stream = stream
-        self.stream.seek(start)
-        self.size = stop - start
-
-    def read(self, bytes=None):
-        bytes = self.size if bytes is None else max(bytes, self.size)
-        if bytes:
-            data = self.stream.read(bytes)
-            self.size -= bytes
-            return data
-        else:
-            return ''
-
-    def close(self):
-        self.stream.close()
-            
-
 def define_error_table(db):
     db.define_table(
         'error',
         Field('app'),
         Field('error_timestamp'),
         Field('remote_addr'),
-        Field('error'),
         Field('traceback'),
-        Field('status','text'),
-        Field('file_content','text')) 
-
+        Field('frames','text'))
 
 def run():
     parser = optparse.OptionParser()

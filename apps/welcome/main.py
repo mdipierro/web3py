@@ -1,8 +1,16 @@
 from web3py import *
+from web3py.session import SessionCookieManager
 from web3py.validators import IS_NOT_EMPTY
 
 db = DAL('sqlite://storage.test')
 db.define_table('person',Field('name',requires=IS_NOT_EMPTY()))
+
+class Example(Cleaner):
+    def __init__(self): pass
+    def on_start(self): print 'start'
+    def on_success(self): print 'success'
+    def on_failure(self): print 'failure'
+expose.common_cleaners = [Example(), SessionCookieManager(), db]
 
 @expose()
 def index():
@@ -16,6 +24,11 @@ def index():
                 Field('c','datetime')).process()
     message = form.vars.name or ''
     return locals()
+
+@expose()
+def error():
+    return 1/0
+    
 
 @expose(template='index.html')
 def index1():

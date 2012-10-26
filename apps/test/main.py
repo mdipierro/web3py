@@ -17,7 +17,7 @@ def test_args(a,b=9):
 def test_template():
     return dict(message='test_template')
 
-@expose(dbs=[db])
+@expose(cleaners=[])
 def test_database():
     db._adapter.reconnect()
     db.junk.insert(ts=current.now)

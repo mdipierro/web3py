@@ -22,3 +22,5 @@ CREATE TABLE person(
     name CHAR(512)
 );
 success!
+timestamp: 2012-10-25T23:39:08.912003
+ALTER TABLE error ADD frames TEXT;

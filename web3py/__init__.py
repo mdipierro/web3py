@@ -6,3 +6,4 @@ from .forms import Form, DALForm
 from .cache import cache
 from .dal import DAL, Field
 from .current import current
+from .cleaners import Cleaner

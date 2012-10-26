@@ -184,6 +184,11 @@ else:
     hashlib_md5 = lambda s: hashlib.md5(bytes(s,'utf8'))
     unicode = str
 
+try:
+    from cleaners import Cleaner
+except ImportError:
+    class Cleaner(object): pass
+
 CALLABLETYPES = (types.LambdaType, types.FunctionType,
                  types.BuiltinFunctionType,
                  types.MethodType, types.BuiltinMethodType)
@@ -6611,7 +6616,7 @@ def smart_query(fields,text):
             field = op = neg = logic = None
     return query
 
-class DAL(object):
+class DAL(Cleaner):
 
     """
     an instance of this class represents a database connection
@@ -6650,6 +6655,9 @@ class DAL(object):
             THREAD_LOCAL.db_instances[db_uid] = db_group
         db._db_uid = db_uid
         return db
+
+    def reconnect(self):
+        self._adapter.reconnect()
 
     @staticmethod
     def set_folder(folder):
@@ -7344,6 +7352,16 @@ def index():
                 tablename = line[6:]
                 self[tablename].import_from_csv_file(
                     ifile, id_map, null, unique, id_offset, *args, **kwargs)
+
+    # required by the web3py cleaner
+    def on_start(self):
+        self.reconnect()
+    def on_success(self):
+        self.commit()
+        # self.close()
+    def on_failure(self):
+        self.rollback()
+        # self.close()
 
 def DAL_unpickler(db_uid):
     return DAL('<zombie>',db_uid=db_uid)

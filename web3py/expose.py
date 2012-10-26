@@ -6,6 +6,7 @@ import threading
 import traceback
 
 from .cache import cache
+from .cleaners import Cleaner, WrapWithCleaners
 from .storage import Storage
 from .template import render
 from .current import current
@@ -31,6 +32,7 @@ class expose(object):
     apps = {}
     routes_in = []
     routes_out = {}    
+    common_cleaners = []
     REGEX_INT = re.compile('<int\:(\w+)>')
     REGEX_STR = re.compile('<str\:(\w+)>')
     REGEX_ANY = re.compile('<any\:(\w+)>')
@@ -56,12 +58,12 @@ class expose(object):
                  name = None,
                  template = None,
                  requires = None,
-                 dbs = None,
+                 cleaners = None,
                  schemes = None,
                  hostname = None,
                  methods = None,
                  cache = None,
-                 cache_expire = 0.5):
+                 cache_expire = 0):
         if callable(path):
             raise SyntaxError('@expose(), not @expose')
         self.schemes = schemes or ('http','https')
@@ -71,9 +73,12 @@ class expose(object):
         self.name = name
         self.template = template
         self.requires = requires
-        self.dbs = dbs or []
         self.cache = cache
         self.cache_expire = cache_expire
+        self.cleaners = self.common_cleaners + (cleaners or [])
+        # check cleaners are indeed valid cleaners
+        if any(not isinstance(cleaner, Cleaner) for cleaner in self.cleaners):
+            raise RuntimeError('Invalid Cleaner')
 
     def build_name(self):
         short = self.filename[1+len(self.folder):].rsplit('.',1)[0]
@@ -104,11 +109,12 @@ class expose(object):
             self.template_path = 'apps/%s/templates/' % self.application
         else:
             raise RuntimeError('unable to determine the application name')
-        if self.cache_expire is not 0:
-            self.func = cache(func, self.cache_expire,
+        wrapped_func = WrapWithCleaners(self.cleaners)(func)
+        if self.cache_expire > 0:
+            self.func = cache(wrapped_func, self.cache_expire,
                               cache_args=False, cache_vars = True)
         else:
-            self.func = func
+            self.func = wrapped_func
         self.regex = expose.build_regex(
             self.schemes, self.hostname, self.methods, self.path)
         route = (re.compile(self.regex), self)

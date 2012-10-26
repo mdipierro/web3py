@@ -80,6 +80,9 @@ class Form(TAG):
         self.id_prefix = ''
 
     def process(self, keepvalues = False):
+
+        print current.post_vars
+
         if not self.processed:
             if self.attributes['_method']=='POST':
                 self.input_vars = Storage(current.post_vars)
