@@ -10,35 +10,34 @@ __all__ = ['tag', 'cat', 'safe']
 def xmlescape(s, quote=True):
     """
     returns an escaped string of the provided text s
-
-    :param s: the text to be escaped
-    :param quote: optional (default False)
+    s: the text to be escaped
+    quote: optional (default True)
     """
-
     # first try the as_html function
     if isinstance(s, TAG):
         return s.as_html()
-
     # otherwise, make it a string
     if not isinstance(s, (str, unicode)):
         s = str(s)
     elif isinstance(s, unicode):
         s = s.encode('utf8', 'xmlcharrefreplace')
-
     s = s.replace("&", "&amp;") # Must be done first!
     s = s.replace("<", "&lt;")
     s = s.replace(">", "&gt;")
-    s = s.replace("'", "&#x27;")
     if quote:
+        s = s.replace("'", "&#x27;")
         s = s.replace('"', "&quot;")
     return s
 
 
 class TAG(object):
+
     def __init__(self, name):
         self.safe = safe
         self.name = name
         self.parent = None
+        self.components = []
+        self.attributes = {}
 
     def __call__(self, *components, **attributes):
         self.components = list(components)
@@ -98,25 +97,28 @@ class TAG(object):
     def find(self,expr):
         union = lambda a,b: a.union(b)        
         if ',' in expr:
-            tags = reduce(union, [self.find(x.strip()) for x in expr.split(',')],set())
+            tags = reduce(union, [self.find(x.strip()) 
+                                  for x in expr.split(',')],set())
         elif ' ' in expr:
             tags = [self]
             for k,item in enumerate(expr.split()):
                 if k>0:
-                    children = [set([c for c in tag if isinstance(c,TAG)]) for tag in tags]
+                    children = [set([c for c in tag if isinstance(c,TAG)]) 
+                                for tag in tags]
                     tags = reduce(union,children)
                 tags = reduce(union, [tag.find(item) for tag in tags],set())
         else:
-            tags = reduce(union,[c.find(expr) for c in self if isinstance(c,TAG)],set())
+            tags = reduce(union,[c.find(expr) 
+                                 for c in self if isinstance(c,TAG)],set())
             tag = TAG.regex_tag.match(expr)
             id = TAG.regex_id.match(expr)
             _class = TAG.regex_class.match(expr)
             attr = TAG.regex_attr.match(expr)
-            if \
-                    (tag is None or self.name == tag.group(1)) and \
-                    (id is None or self['_id'] == id.group(1)) and \
-                    (_class is None or _class.group(1) in (self['_class'] or '').split()) and \
-                    (attr is None or self['_'+attr.group(1)] == attr.group(2)):
+            if (tag is None or self.name == tag.group(1)) and \
+               (id is None or self['_id'] == id.group(1)) and \
+               (_class is None or _class.group(1) in \
+                    (self['_class'] or '').split()) and \
+               (attr is None or self['_'+attr.group(1)] == attr.group(2)):
                 tags.add(self)
         return tags
 
@@ -136,6 +138,7 @@ class TAG(object):
 
 
 class METATAG(object):
+
     def __getattr__(self, name):
         return TAG(name)
 
@@ -145,6 +148,7 @@ class METATAG(object):
 tag = METATAG()
 
 class cat(TAG):
+
     def __init__(self, *components):
         self.components = components
 
@@ -152,10 +156,16 @@ class cat(TAG):
         return ''.join(xmlescape(v) for v in self.components)
 
 class safe(TAG):
+
     def __init__(self, text, sanitize=False, allowed_tags={}):
         self.text = text
         self.allowed_tags = allowed_tags
 
     def as_html(self):
-        return sanitize(self.text, self.allowed_tags.keys(), self.allowed_tags)
+        if sanitize:
+            return sanitize(self.text, 
+                            self.allowed_tags.keys(), self.allowed_tags)
+        else:
+            return self.text
+
 

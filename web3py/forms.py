@@ -1,3 +1,6 @@
+import uuid
+import hashlib
+
 from .helpers import tag, TAG
 from .storage import Storage
 from .current import current
@@ -73,21 +76,34 @@ class Form(TAG):
         self.errors = Storage()
         self.vars = Storage()
         self.input_vars = None
-        self.formkey = '123'
         self.processed = False
         self.submitted = False
         self.accepted = False
         self.id_prefix = ''
-
-    def process(self, keepvalues = False):
-
-        print current.post_vars
+        self.formname = 'form-'+hashlib.md5(
+            ''.join(f.name for f in fields)).hexdigest()
+        
+    def process(self, keepvalues = False, csrf_methods=['POST']):
 
         if not self.processed:
+            self.processed = True
+            method = self.attributes['_method']
+
+            # CRSF protection logic
+            if method in csrf_methods:
+                if self.formname in current.session:
+                    token = current.session[self.formname]
+                    self.formkey = self.formname + ':' + token
+                else:
+                    self.formkey = 'not-assigned' # but be != None
+            
+            # get appropriate input variables
             if self.attributes['_method']=='POST':
                 self.input_vars = Storage(current.post_vars)
             else:
                 self.input_vars = Storage(current.get_vars)
+            
+            # validate input
             if self.input_vars._formkey == self.formkey:
                 self.submitted = True
                 for field in self.fields:
@@ -99,16 +115,24 @@ class Form(TAG):
                         self.vars[field.name] = value                    
                 if not self.errors:
                     self.accepted = True
-                # reset formkey
-            self.processed = True
+                
+            # reset formkey
+            if self.formkey:
+                token = str(uuid.uuid4())
+                current.session[self.formname] = token
+                self.formkey = self.formname+':'+token
+        
+        # reset default values in form
         if not self.submitted or (self.accepted and not keepvalues):
             for field in self.fields:
                 self.input_vars[field.name] = field.default
+
         return self
 
     @staticmethod
     def style_bootstrap(form):
-        fieldset = tag.fieldset()        
+        fieldset = tag.fieldset()     
+        attr = form.attributes
         for field in form.fields:
             name = field.name           
             id = form.id_prefix + name
@@ -124,19 +148,21 @@ class Form(TAG):
             if field.comment:
                 wrapper.append(tag.p(field.comment,_class='help-block'))
             fieldset.append(tag.div(label,wrapper,_class='control-group'))
-        submit = tag.input(_type='submit',_value=form.attributes['submit'],
+        submit = tag.input(_type='submit',_value=attr['submit'],
                            _class='btn btn-primary')        
         fieldset.append(tag.div(submit,_class='form-actions'))
         if form.formkey:
-            fieldset.append(tag.input(_name='_formkey',_type='hidden',_value=form.formkey))
-        for key, value in form.attributes.get('hidden',{}).iteritems():
+            fieldset.append(tag.input(_name='_formkey',_type='hidden',
+                                      _value=form.formkey))
+        for key, value in attr.get('hidden',{}).iteritems():
             fieldset.append(tag.input(_name=key,_type='hidden',_value=value))
-        form.attributes['_class'] = form.attributes.get('_class','form-horizontal')
-        return tag.form(fieldset, **form.attributes)
+        attr['_class'] = attr.get('_class','form-horizontal')
+        return tag.form(fieldset, **attr)
 
     @staticmethod
     def style_table3cols(form):
         tbody = tag.tbody()        
+        attr = form.attributes
         for field in form.fields:
             name = field.name           
             id = form.id_prefix + name
@@ -150,12 +176,13 @@ class Form(TAG):
             if name in form.errors:
                 wrapper.append(tag.div(form.errors[name],_class='w3p_error'))
             tbody.append(tag.tr(tag.td(label),wrapper,tag.td(field.comment)))
-        submit = tag.input(_type='submit',_value=form.attributes['submit'])
+        submit = tag.input(_type='submit',_value=attr['submit'])
         tbody.append(tag.tr(tag.td(''),tag.td(submit),tag.td('')))
-        newform = tag.form(tbody,**form.attributes)
+        newform = tag.form(tbody,**attr)
         if form.formkey:
-            newform.append(tag.input(_name='_formkey',_type='hidden',_value=form.formkey))
-        for key, value in form.attributes.get('hidden',{}).iteritems():
+            newform.append(tag.input(_name='_formkey',_type='hidden',
+                                     _value=form.formkey))
+        for key, value in attr.get('hidden',{}).iteritems():
             newform.append(tag.input(_name=key,_type='hidden',_value=value))
         return newform
 
@@ -163,16 +190,18 @@ class Form(TAG):
         return self.attributes['formstyle'](self).as_html()
 
 class DALForm(Form):
-    def __init__(self, table, record=None, record_id=None, query=None, **attributes):
+    def __init__(self, table, record=None, record_id=None, **attributes):
         self.table = table
-        self.record = record or table(record_id or query)
+        self.record = record or table(record_id)
         print self.record
-        fields = [field for field in table if field.type!='id' and field.writable]
+        fields = [field for field in table 
+                  if field.type!='id' and field.writable]
         Form.__init__(self,*fields,**attributes)
         self.id_prefix = table._tablename
 
-    def process(self, current, keepvalues = False):
-        ret = Form.process(self, current, True)
+    def process(self, current, keepvalues = False, csrf_token=True):
+        ret = Form.process(self, current, keepvalue = True,
+                           csrf_token = csrf_token)
         if self.accepted:
             if self.record:
                 self.record.update_record(**self.vars)
@@ -180,7 +209,8 @@ class DALForm(Form):
                 self.vars.id = self.table.insert(**self.vars)
         if not self.submitted or self.processed and not keepvalues:
             for field in self.fields:
-                value = self.record[field.name] if self.record else field.default
+                value = self.record[field.name] if self.record \
+                    else field.default
                 self.input_vars[field.name] = field.formatter(value)
         return self
 

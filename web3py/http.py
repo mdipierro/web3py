@@ -68,7 +68,7 @@ class HTTP(Exception):
     @staticmethod
     def cookies2header(cookies):
         headers = []
-        for cookie in cookies.values:
+        for cookie in cookies.values():
             headers.append(('Set-Cookie', str(cookie)[11:]))
         return headers
 

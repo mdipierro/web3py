@@ -1,16 +1,12 @@
-from web3py import *
+from web3py import DAL, Field, expose, tag, cat, safe, HTTP, url, Form, DALForm
 from web3py.session import SessionCookieManager
+from web3py.dal import Transact
 from web3py.validators import IS_NOT_EMPTY
 
 db = DAL('sqlite://storage.test')
 db.define_table('person',Field('name',requires=IS_NOT_EMPTY()))
 
-class Example(Cleaner):
-    def __init__(self): pass
-    def on_start(self): print 'start'
-    def on_success(self): print 'success'
-    def on_failure(self): print 'failure'
-expose.common_cleaners = [Example(), SessionCookieManager(), db]
+expose.common_cleaners = [SessionCookieManager('test'),Transact(db)]
 
 @expose()
 def index():
@@ -28,10 +24,14 @@ def index():
 @expose()
 def error():
     return 1/0
-    
+
+@expose()
+def counter():
+    current.session.counter = (current.session.counter or 0)+1
+    return current.session.counter
 
 @expose(template='index.html')
-def index1():
+def dal_form():
     form = DALForm(db.person, record_id=1).process()
     db.commit()
     message = form.vars.name

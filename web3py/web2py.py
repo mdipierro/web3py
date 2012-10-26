@@ -11,6 +11,9 @@ from .helpers import TAG, tag, cat, safe, xmlescape
 from .storage import Storage
 from .template import render
 from .current import current
+from .menu import MENU
+from .beautify import BEAUTIFY
+from .session import SessionCookieManager
 
 def URL(f,c,a,r=None,args=[],vars={}):
     if f is None:
@@ -69,7 +72,6 @@ def build_environment(current,c,f,e,args):
     environment['response'] = current.response = response = Response()
 
     environment['session'] = session = current.session
-    environment['URL'] = lambda f=None,c=None,a=None,r=request,args=[],vars={}:URL(f,c,a,r,args,vars)    
     request.env = current.env
     request.now = current.now
     request.application = a
@@ -84,12 +86,10 @@ def build_environment(current,c,f,e,args):
     request.post_vars = current.post_vars
     request.vars = copy.copy(current.get_vars)
     request_is_local = True
-
-    # <begin missing stuff>
-    response.view = None # should be defined
-    environment['MENU'] = lambda *a, **b: 'missing'
-    environment['BEAUTIFY'] = lambda *a, **b: 'missing'
-    # <end missing stuff>
+    environment['MENU'] = MENU
+    environment['BEAUTIFY'] = BEAUTIFY
+    response.view = None # THIS DOES NOT WORK
+    environment['URL'] = lambda f=None,c=None,a=None,r=request,args=[],vars={}:URL(f,c,a,r,args,vars)    
 
     for key,value in current.post_vars.iteritems():
         if not key in request.vars:

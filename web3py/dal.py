@@ -6616,7 +6616,7 @@ def smart_query(fields,text):
             field = op = neg = logic = None
     return query
 
-class DAL(Cleaner):
+class DAL(object):
 
     """
     an instance of this class represents a database connection
@@ -7352,16 +7352,6 @@ def index():
                 tablename = line[6:]
                 self[tablename].import_from_csv_file(
                     ifile, id_map, null, unique, id_offset, *args, **kwargs)
-
-    # required by the web3py cleaner
-    def on_start(self):
-        self.reconnect()
-    def on_success(self):
-        self.commit()
-        # self.close()
-    def on_failure(self):
-        self.rollback()
-        # self.close()
 
 def DAL_unpickler(db_uid):
     return DAL('<zombie>',db_uid=db_uid)
@@ -9370,6 +9360,17 @@ class Rows(object):
                 import gluon.contrib.simplejson as simplejson
             return simplejson.dumps(items)
 
+class Transact(Cleaner):
+    def __init__(self,db):
+        self.db = db
+    def on_start(self):
+        self.db._adapter.reconnect()
+    def on_success(self):
+        self.db._adapter.commit()
+        self.db._adapter.close()
+    def on_failure(self):
+        self.db._adapter.rollback()
+        self.db._adapter.close()
 
 ################################################################################
 # dummy function used to define some doctests

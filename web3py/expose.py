@@ -10,6 +10,7 @@ from .cleaners import Cleaner, WrapWithCleaners
 from .storage import Storage
 from .template import render
 from .current import current
+from .helpers import TAG
 
 __all__ = ['expose', 'url']
 
@@ -181,8 +182,10 @@ class expose(object):
             current.output = [output]
         elif isinstance(output, TAG):
             current.output = [output.as_html()]
-        else:
+        elif hasattr(output,'__iter__'):
             current.output = output
+        else:
+            current.output = [str(output)]
 
     @staticmethod
     def scan_apps(folder):

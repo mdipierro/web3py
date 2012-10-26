@@ -7,6 +7,7 @@ class Cleaner(object):
     def on_start(self): pass
     def on_success(self): pass
     def on_failure(self): pass
+    def wrap_call(self,func): return func
 
 class WrapWithCleaners(object):
     def __init__(self, cleaners=[]):
@@ -16,7 +17,7 @@ class WrapWithCleaners(object):
             def g(*a,**b):
                 try:
                     cleaner.on_start()
-                    output = f(*a,**b)
+                    output = cleaner.wrap_call(f)(*a,**b)
                     cleaner.on_success()
                     return output
                 except:
@@ -25,8 +26,7 @@ class WrapWithCleaners(object):
             return g
         for cleaner in self.cleaners:
             if isinstance(cleaner,Cleaner):
-                print 'wrapping cleaner'
-                f = wrap(f, cleaner)        
+                f = wrap(f, cleaner)
         return f
 
 def smart_traceback():
