@@ -13,9 +13,9 @@ def xmlescape(s, quote=True):
     s: the text to be escaped
     quote: optional (default True)
     """
-    # first try the as_html function
+    # first try the xml function
     if isinstance(s, TAG):
-        return s.as_html()
+        return s.xml()
     # otherwise, make it a string
     if not isinstance(s, (str, unicode)):
         s = str(s)
@@ -32,15 +32,32 @@ def xmlescape(s, quote=True):
 
 class TAG(object):
 
+    rules = {'ul':['li'], 
+             'ol':['li'], 
+             'table':['tr','thead','tbody'], 
+             'thead':['tr'],
+             'tbody':['tr'],
+             'tr':['td','th'],
+             'select',['option','optgroup'],
+             'optgroup':['optionp']}
+    
     def __init__(self, name):
         self.safe = safe
         self.name = name
         self.parent = None
         self.components = []
-        self.attributes = {}
+        self.attributes = {}        
+
+    @staticmethod
+    def wrap(component,rules):
+        if not rules:
+            return component
+        if not isinstance(component,TAG) or not component.name in rules:
+            return TAG(rules[0])(component)
 
     def __call__(self, *components, **attributes):
-        self.components = list(components)
+        rules = self.rules.get(self.name,[])
+        self.components = [self.wrap(comp,rules) for comp in components]
         self.attributes = attributes
         for component in self.components:
             if isinstance(component,TAG):
@@ -73,7 +90,10 @@ class TAG(object):
             yield item
 
     def __str__(self):
-        return self.as_html()
+        return self.xml()
+    
+    def __add__(self,other):
+        return cat(self,other)
 
     def add_class(self, name):
         """ add a class to _class attribute """
@@ -122,7 +142,7 @@ class TAG(object):
                 tags.add(self)
         return tags
 
-    def as_html(self):
+    def xml(self):
         name = self.name
         co = ''.join(xmlescape(v) for v in self.components)
         ca = ' '.join('%s="%s"' % (k[1:], k[1:] if v==True else xmlescape(v))
@@ -135,7 +155,7 @@ class TAG(object):
             return '<%s%s>%s</%s>' % (name, ca, co, name)
 
     __repr__ = __str__
-
+    as_html = xml # compatibility layer
 
 class METATAG(object):
 
@@ -152,20 +172,23 @@ class cat(TAG):
     def __init__(self, *components):
         self.components = components
 
-    def as_html(self):
+    def xml(self):
         return ''.join(xmlescape(v) for v in self.components)
 
 class safe(TAG):
 
-    def __init__(self, text, sanitize=False, allowed_tags={}):
+    default_allowed_tags = {
+        'a':['href','title','target'], 'b':[], 'blockquote':['type'],
+        'br':[], 'i':[], 'li':[], 'ol':[], 'ul':[], 'p':[], 'cite':[],
+        'code':[], 'pre':[], 'img':['src', 'alt'], 'strong':[],
+        'h1':[], 'h2':[], 'h3':[], 'h4':[], 'h5':[], 'h6':[],
+        'table':[], 'tr':[], 'td':['colspan'], 'div':[],
+        }
+
+    def __init__(self, text, sanitize=False, allowed_tags=None):
         self.text = text
-        self.allowed_tags = allowed_tags
+        self.allowed_tags = allowed_tags or safe.default_allowed_tags
 
-    def as_html(self):
-        if sanitize:
-            return sanitize(self.text, 
-                            self.allowed_tags.keys(), self.allowed_tags)
-        else:
-            return self.text
-
-
+    def xml(self):
+        return self.text if not sanitize else \
+            sanitize(self.text, self.allowed_tags.keys(), self.allowed_tags)
