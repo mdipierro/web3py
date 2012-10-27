@@ -198,10 +198,11 @@ def initialize_urandom():
             pass
     except NotImplementedError:
         have_urandom = False
-        logger.warning(
-            """Cryptographically secure session management is not possible on your system because
-your system does not provide a cryptographically secure entropy source.
-This is not specific to web2py; consider deploying on a different operating system.""")
+        logger.warning("Cryptographically secure session management is not "
+                       "possible on your system because your system does not "
+                       "provide a cryptographically secure entropy source. "
+                       "This is not specific to web2py; consider deploying "
+                       "on a different operating system.")
     if python_version == 2:
         packed = ''.join(chr(x) for x in ctokens) # python 2
     else:
