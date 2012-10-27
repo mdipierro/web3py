@@ -38,7 +38,7 @@ class TAG(object):
              'thead':['tr'],
              'tbody':['tr'],
              'tr':['td','th'],
-             'select',['option','optgroup'],
+             'select':['option','optgroup'],
              'optgroup':['optionp']}
     
     def __init__(self, name):
