@@ -1,4 +1,4 @@
-from cPickle import Pickler, Unpickler
+from cPickle import Pickler, Unpickler, UnpicklingError
 from cStringIO import StringIO
 
 __all__ = ['load','loads','dump','dumps']
@@ -16,7 +16,7 @@ def persistent_load(persid):
         value = persid[len(KEY):]
         return value
     else:
-        raise pickle.UnpicklingError, 'Invalid persistent id'
+        raise UnpicklingError, 'Invalid persistent id'
 
 def dump(data,stream):
     p = Pickler(stream)
@@ -40,6 +40,6 @@ def check():
     a = {'this':'is', 'a':lambda: 'test'}
     s = dumps(a)
     b = loads(s)
-    assert "{'this': 'is', 'a': '<function <lambda> at 0x" in repr(b) 
+    assert "{'this': 'is', 'a': '<function <lambda> at 0x" in repr(b)
 
 check()

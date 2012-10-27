@@ -1,7 +1,6 @@
 import re
 
 from .sanitizer import sanitize
-from .storage import Storage
 
 __all__ = ['tag', 'cat', 'safe']
 
@@ -32,21 +31,21 @@ def xmlescape(s, quote=True):
 
 class TAG(object):
 
-    rules = {'ul':['li'], 
-             'ol':['li'], 
-             'table':['tr','thead','tbody'], 
+    rules = {'ul':['li'],
+             'ol':['li'],
+             'table':['tr','thead','tbody'],
              'thead':['tr'],
              'tbody':['tr'],
              'tr':['td','th'],
              'select':['option','optgroup'],
              'optgroup':['optionp']}
-    
+
     def __init__(self, name):
         self.safe = safe
         self.name = name
         self.parent = None
         self.components = []
-        self.attributes = {}        
+        self.attributes = {}
 
     @staticmethod
     def wrap(component,rules):
@@ -69,7 +68,7 @@ class TAG(object):
 
     def insert(self,i,component):
         self.components.insert(i,component)
-        
+
     def remove(self,component):
         self.components.remove(component)
 
@@ -84,14 +83,14 @@ class TAG(object):
             self.components.insert(key,value)
         else:
             self.attributes[key] = value
-    
+
     def __iter__(self):
         for item in self.components:
             yield item
 
     def __str__(self):
         return self.xml()
-    
+
     def __add__(self,other):
         return cat(self,other)
 
@@ -115,20 +114,20 @@ class TAG(object):
     regex_attr = re.compile('\[([\w\-\:]+)=(.*?)\]')
 
     def find(self,expr):
-        union = lambda a,b: a.union(b)        
+        union = lambda a,b: a.union(b)
         if ',' in expr:
-            tags = reduce(union, [self.find(x.strip()) 
+            tags = reduce(union, [self.find(x.strip())
                                   for x in expr.split(',')],set())
         elif ' ' in expr:
             tags = [self]
             for k,item in enumerate(expr.split()):
                 if k>0:
-                    children = [set([c for c in tag if isinstance(c,TAG)]) 
+                    children = [set([c for c in tag if isinstance(c,TAG)])
                                 for tag in tags]
                     tags = reduce(union,children)
                 tags = reduce(union, [tag.find(item) for tag in tags],set())
         else:
-            tags = reduce(union,[c.find(expr) 
+            tags = reduce(union,[c.find(expr)
                                  for c in self if isinstance(c,TAG)],set())
             tag = TAG.regex_tag.match(expr)
             id = TAG.regex_id.match(expr)

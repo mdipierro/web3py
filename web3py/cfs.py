@@ -14,7 +14,6 @@ FOR INTERNAL USE ONLY
 
 from os import stat
 import thread
-import logging
 
 cfs = {}  # for speed-up
 cfs_lock = thread.allocate_lock()  # and thread safety

@@ -1,6 +1,8 @@
 import os
 import re
 import time
+import sys
+import errno
 
 from .http import HTTP
 from .contenttype import contenttype
@@ -40,9 +42,8 @@ def stream_file_handler(environ, start_response, static_file, version = None, he
         headers = dict()
         headers['Content-Type'] = contenttype(static_file)
             # check if file to be served as an attachment
-        if environ.get('QUERY_STRING').startswith('attachment_filename='):
-            headers['Content-Disposition'] = 'attachment; filanme="%s"' % \
-                environ.get('QUERY_STRING').split('=', 1)[1]
+        if environ.get('QUERY_STRING').startswith('attachment'):
+            headers['Content-Disposition'] = 'attachment; filename="%s"' % static_file
         # check if file modified since or not
         if environ.get('HTTP_IF_MODIFIED_SINCE') == mtime:
             return HTTP(304, headers=headers).to(environ, start_response)
@@ -53,7 +54,7 @@ def stream_file_handler(environ, start_response, static_file, version = None, he
             headers['Expires'] = 'Thu, 31 Dec 2037 23:59:59 GMT'
         else:
             headers['Cache-Control'] = 'private'
-        # check whether a range request and serve patial content accordingly
+        # check whether a range request and serve partial content accordingly
         http_range = environ.get('HTTP_RANGE', None)
         if http_range:
             status = 206
@@ -73,7 +74,7 @@ def stream_file_handler(environ, start_response, static_file, version = None, he
                     fsize = os.path.getsize(gzipped)
                     headers['Content-Encoding'] = 'gzip'
                     headers['Vary'] = 'Accept-Encoding'
-                    stream = open(static_file,'rb')           
+                    stream = open(static_file,'rb')
             headers['Content-Length'] = fsize
     except IOError:
         if sys.exc_info()[1][0] in (errno.EISDIR, errno.EACCES):
@@ -87,4 +88,3 @@ def stream_file_handler(environ, start_response, static_file, version = None, he
         else:
             data = iter(lambda: stream.read(block_size), '')
         return HTTP(status,data,headers=headers).to(environ, start_response)
-

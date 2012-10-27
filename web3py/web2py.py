@@ -1,9 +1,7 @@
 import os
-import re
 import glob
 import copy
 import cStringIO
-import cgi
 import urllib
 
 from .http import HTTP
@@ -13,7 +11,6 @@ from .template import render
 from .current import current
 from .menu import MENU
 from .beautify import BEAUTIFY
-from .session import SessionCookieManager
 
 def URL(f,c,a,r=None,args=[],vars={}):
     if f is None:
@@ -21,11 +18,11 @@ def URL(f,c,a,r=None,args=[],vars={}):
     elif c is None:
         c,a=r.controller,r.application
     elif a is None:
-        f,c,a=c,f,r.application        
+        f,c,a=c,f,r.application
     else:
         f,c,a = a,c,f
     q = urllib.quote
-    url = '/%s/%s/%s' % (a,c,f)    
+    url = '/%s/%s/%s' % (a,c,f)
     if args:
         if not isinstance(args,(list,tuple)): args=[args]
         url+='/'+''.join(q(x) for x in args)
@@ -34,8 +31,8 @@ def URL(f,c,a,r=None,args=[],vars={}):
     return url
 
 class Response(Storage):
-    css_template = '<link href="%s" rel="stylesheet" type="text/css" />'                   
-    js_template = '<script src="%s" type="text/javascript"></script>'                      
+    css_template = '<link href="%s" rel="stylesheet" type="text/css" />'
+    js_template = '<script src="%s" type="text/javascript"></script>'
 
     def __init__(self):
         self.body = cStringIO.StringIO()
@@ -44,10 +41,10 @@ class Response(Storage):
         self.delimiters = ('{{','}}')
     def write(self,data,escape=True):
         return self.body.write(data.as_html() if isinstance(data,TAG) else xmlescape(str(data)) if escape else str(data))
-    def include_meta(self):                                                            
-        s = '\n'.join(                                                                 
-            '<meta name="%s" content="%s" />\n' % (k, xmlescape(v))                    
-            for k, v in (self.meta or {}).iteritems())                                 
+    def include_meta(self):
+        s = '\n'.join(
+            '<meta name="%s" content="%s" />\n' % (k, xmlescape(v))
+            for k, v in (self.meta or {}).iteritems())
         self.write(s, escape=False)
     def include_files(self):
         s=''
@@ -55,14 +52,14 @@ class Response(Storage):
             if isinstance(item, str):
                 f = item.lower().split('?')[0]
                 if f.endswith('.css'): s += self.css_template % item
-                elif f.endswith('.js'): s += self.js_template % item                                            
+                elif f.endswith('.js'): s += self.js_template % item
         self.write(s, escape=False)
 
 def build_environment(current,c,f,e,args):
     a = current.application
     environment = {}
     for name in 'A,B,BODY,BR,CENTER,CLEANUP,CRYPT,DAL,DIV,EM,EMBED,FIELDSET,FORM,H1,H2,H3,H4,H5,H6,HEAD,HR,HTML,I,IFRAME,IMG,INPUT,LABEL,LEGEND,LI,LINK,LOAD,MARKMIN,META,OBJECT,OL,ON,OPTGROUP,OPTION,P,PRE,SCRIPT,SELECT,SPAN,STYLE,TABLE,TBODY,TD,TEXTAREA,TFOOT,TH,THEAD,TITLE,TR,TT,UL'.split(','):
-        environment[name] = tag[name]    
+        environment[name] = tag[name]
     environment['T'] = current.T
     environment['CAT'] = cat
     environment['XML'] = safe
@@ -71,7 +68,7 @@ def build_environment(current,c,f,e,args):
     environment['request'] = current.request = request = Storage()
     environment['response'] = current.response = response = Response()
 
-    environment['session'] = session = current.session
+    environment['session'] = current.session
     request.env = current.env
     request.now = current.now
     request.application = a
@@ -85,11 +82,11 @@ def build_environment(current,c,f,e,args):
     request.get_vars = current.get_vars
     request.post_vars = current.post_vars
     request.vars = copy.copy(current.get_vars)
-    request_is_local = True
+    request.is_local = True # FIXME
     environment['MENU'] = MENU
     environment['BEAUTIFY'] = BEAUTIFY
     response.view = None # THIS DOES NOT WORK
-    environment['URL'] = lambda f=None,c=None,a=None,r=request,args=[],vars={}:URL(f,c,a,r,args,vars)    
+    environment['URL'] = lambda f=None,c=None,a=None,r=request,args=[],vars={}:URL(f,c,a,r,args,vars)
 
     for key,value in current.post_vars.iteritems():
         if not key in request.vars:
@@ -128,7 +125,7 @@ def web2py_handler():
         old_env.update(output)
         tpath = os.path.join(folder,'views')
         template = os.path.join(tpath,controller,function+'.'+extension)
-        if not os.path.exists(template):            
+        if not os.path.exists(template):
             template = os.path.join(tpath,'generic.'+extension)
         output = render(filename = template, path = tpath, context = old_env)
     elif isinstance(output,TAG):

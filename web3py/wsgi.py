@@ -34,13 +34,13 @@ def dynamic_handler(environ, start_response):
 def static_handler(environ, start_response):
     static_file = None
     path_info = environ['PATH_INFO']
-    static_match = REGEX_STATIC.match(path_info) 
-    if static_match: # check if visitor has requested a static file        
-        app, version, filename = static_match.group('a', 'v','f')        
+    static_match = REGEX_STATIC.match(path_info)
+    if static_match: # check if visitor has requested a static file
+        app, version, filename = static_match.group('a', 'v','f')
         static_file = os.path.abspath(
             os.path.join(GLOBAL['apps_folder'], app, 'static', filename))
         # prevent directory traversal attacks
-        if static_file.startswith(GLOBAL['apps_folder']):            
+        if static_file.startswith(GLOBAL['apps_folder']):
             return stream_file_handler(
                 environ, start_response, static_file, version,
                 GLOBAL['stream_block_size'])
@@ -48,9 +48,9 @@ def static_handler(environ, start_response):
             return HTTP(404).to(environ, start_response)
     else: # else call the dynamic handler
         data = dynamic_handler(environ, start_response)
-        if isinstance(data, HTTP.stream): 
+        if isinstance(data, HTTP.stream):
             return stream_file_handler(
-                environ, start_response, data.static_file, 
+                environ, start_response, data.static_file,
                 data.version, data.headers,
                 GLOBAL['stream_block_size'])
         else:
@@ -73,10 +73,9 @@ def error_handler(environ, start_response):
                 remote_addr=environ['REMOTE_ADDR'],
                 traceback=tb,frames=dumps(frames))
             db.commit()
-            body = '<html><body>ticket-%s</body></html>' % ticket 
+            body = '<html><body>ticket-%s</body></html>' % ticket
         except Exception:
-            error = sys.exc_info()[1]
-            db.rollback()            
+            db.rollback()
             body = '<html><body>Internal error: %s</body></html>'
         return HTTP(500,body).to(environ, start_response)
     finally:

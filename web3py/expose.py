@@ -22,7 +22,7 @@ class expose(object):
 
        @export(path='hello/<str:name>')
        def index(current,name): return 'hello '+name
-    
+
        @export()
        def other(current):
        HTTP.redirect(current.url('index',args='Max'))
@@ -32,7 +32,7 @@ class expose(object):
     prefix = '/<app>'
     apps = {}
     routes_in = []
-    routes_out = {}    
+    routes_out = {}
     common_cleaners = []
     REGEX_INT = re.compile('<int\:(\w+)>')
     REGEX_STR = re.compile('<str\:(\w+)>')
@@ -103,7 +103,7 @@ class expose(object):
             if self.path == '/':
                 self.path = self.prefix or '/'
             else:
-                self.path = '%s%s' % (self.prefix, self.path)            
+                self.path = '%s%s' % (self.prefix, self.path)
         if self.name.startswith('.'):
             self.name = '%s%s' % (self.application, self.name)
         if self.application:
@@ -144,14 +144,14 @@ class expose(object):
                 path = new_path
 
     @staticmethod
-    def clear(application):        
+    def clear(application):
         " remove all routes and reversed routes for this application "
         for route in expose.apps.get(application,[]):
             expose.routes_in.remove(route)
             del expose.routes_out[route[1].name]
 
     @staticmethod
-    def run_dispatcher():        
+    def run_dispatcher():
         " maps the path_info into a function call "
         expression = '%s %s://%s%s' % (
             current.method, current.scheme, current.hostname, current.path_info)
@@ -192,7 +192,7 @@ class expose(object):
         " loops over existing apps and imports main.py, creates routes "
         for app in os.listdir(folder):
             expose.scan(folder,app)
-                            
+
     @staticmethod
     def scan(folder,app,force_reload=True,lock = threading.RLock()):
         " imports a single app from folder (apps folder) "
@@ -235,7 +235,7 @@ def url(path, extension = None, args = None, vars = None,
         url('/myapp/index')
 
     """
-    
+
     q = urllib.quote
     if not '/' in path:
         if not '.' in path:
@@ -246,12 +246,12 @@ def url(path, extension = None, args = None, vars = None,
         try:
             url = expose.routes_out[path]
         except KeyError:
-            raise RuntimeError('invalid url("%s",...)' % path)        
+            raise RuntimeError('invalid url("%s",...)' % path)
     elif path.startswith('./'):
         prefix = expose.apps[current.application][1].prefix
         path = prefix + path[1:]
     if args is not None:
-        if not instance(args,(list,tuple)):
+        if not isinstance(args,(list,tuple)):
             args = (args,)
         url = url + '/' + '/'.join(q(a) for a in args)
     if extension:
@@ -268,7 +268,7 @@ def url(path, extension = None, args = None, vars = None,
         host = host or current.hostname
         url = '%s/%s%s' % (scheme, host, url)
     return url
-            
+
 
 # session object
 

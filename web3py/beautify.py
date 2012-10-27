@@ -1,5 +1,6 @@
 import cgi
 import copy
+import types
 from .helpers import TAG, tag
 
 __all__ = ['BEAUTIFY']
@@ -81,4 +82,3 @@ class BEAUTIFY(TAG):
             else:
                 components.append(repr(c))
         self.components = components
-

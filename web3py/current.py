@@ -1,15 +1,14 @@
 import os
 import cgi
-import logging
-import cgi
-import platform
+import sys
 import threading
 
 from .storage import Storage
 from .contenttype import contenttype
 from .languages import translator
 
-if platform.python_version()[0] == '3':
+python_version = sys.version_info[0]
+if python_version == '3':
     from http.cookies import SimpleCookie # python 3
 else:
     from Cookie import SimpleCookie # python 2
@@ -23,7 +22,7 @@ class Current(threading.local):
     def initialize(self,environ):
         self.__dict__.clear()
         self.environ = environ
-        self.status_code = 200    
+        self.status_code = 200
         self.scheme = 'https' if \
             environ.get('wsgi.url_scheme','').lower() == 'https' or \
             environ.get('HTTP_X_FORWARDED_PROTO','').lower() == 'https' or \
@@ -47,11 +46,10 @@ class Current(threading.local):
         for (key, value) in get_vars.iteritems():
             if isinstance(value,list) and len(value)==1:
                 get_vars[key] = value[0]
-                
+
     def _parse_post_vars(self):
         environ = self.environ
         post_vars = self._post_vars = Storage()
-        length = environ.get('CONTENT_LENGTH')        
         if self.input and environ.get('REQUEST_METHOD') in ('POST', 'PUT', 'BOTH'):
             dpost = cgi.FieldStorage(fp=self.input, environ=environ, keep_blank_values=1)
             for key in sorted(dpost):
@@ -65,7 +63,7 @@ class Current(threading.local):
                     post_vars[key] = value[0]
 
     @property
-    def get_vars(self):       
+    def get_vars(self):
         " lazily parse the query string into get_vars "
         if not hasattr(self,'_get_vars'):
             self._parse_get_vars()
@@ -79,15 +77,15 @@ class Current(threading.local):
     @property
     def env(self):
         """
-        lazily parse the invironment variables into a storage, 
-        for backward compatibility, it is slow 
+        lazily parse the environment variables into a storage,
+        for backward compatibility, it is slow
         """
         if not hasattr(self,'_env'):
-            self._env = Storage((k.lower().replace('.','_'),v) 
+            self._env = Storage((k.lower().replace('.','_'),v)
                                 for (k,v) in self.environ.iteritems())
         return self._env
     @property
-    def request_cookies(self):       
+    def request_cookies(self):
         " lazily parse the request cookies "
         if not hasattr(self,'_request_cookies'):
             self._request_cookies = SimpleCookie()

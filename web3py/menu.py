@@ -1,4 +1,4 @@
-from .helpers import TAG, tag
+from .helpers import TAG, tag, cat
 
 __all__ = ['MENU']
 

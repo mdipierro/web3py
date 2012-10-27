@@ -81,7 +81,4 @@ class HTTP(Exception):
         def __init__(self, filename, version = None, headers = None):
             self.filename = filename
             self.version = version
-            self.stream = stream
             self.headers = headers or dict()
-
-

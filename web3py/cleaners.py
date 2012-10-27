@@ -1,7 +1,7 @@
 import inspect
 import traceback
 
-__all__ = ['Cleaner', ' WrapWithCleaners']
+__all__ = ['Cleaner', 'WrapWithCleaners']
 
 class Cleaner(object):
     def on_start(self): pass
@@ -45,7 +45,7 @@ def smart_traceback():
                            locals_variables = frame.f_locals,
                            global_variables = frame.f_globals))
     return (tb, frames)
-        
+
 def example():
 
     class CleanerExample(Cleaner):

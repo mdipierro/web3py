@@ -89,7 +89,7 @@ def safe_eval(text):
 
 # used as default filter in translator.M()
 
-
+##FIXME_NIPHLOD (remember to port markmin and import here)
 def markmin(s):
     def markmin_aux(m):
         return '{%s}' % markmin_escape(m.group('s'))
@@ -317,7 +317,7 @@ def write_dict(filename, contents):
     try:
         fp = LockedFile(filename, 'w')
     except (IOError, OSError):
-        if not settings.global_settings.web2py_runtime_gae:
+        if not settings.global_settings.web2py_runtime_gae: ##FIXME_NIPHLOD global_settings are not here yet
             logging.warning('Unable to write to file %s' % filename)
         return
     fp.write('# coding: utf8\n{\n')
@@ -707,7 +707,7 @@ class translator(object):
                     else xmlescape(value).translate(ttab_in)
                     for value in symbols)
             message = self.params_substitution(message, symbols)
-        return XML(message.translate(ttab_out))
+        return XML(message.translate(ttab_out)) ##FIXME_NIPHLOD there's no XML() here
 
     def M(self, message, symbols={}, language=None,
           lazy=None, filter=None, ftag=None):
@@ -899,7 +899,7 @@ def findT(path, language=DEFAULT_LANGUAGE):
     mop = pjoin(path, 'modules')
     for filename in \
             listdir(mp, '^.+\.py$', 0) + listdir(cp, '^.+\.py$', 0)\
-            + listdir(vp, '^.+\.html$', 0) + listdir(mop, '^.+\.py$', 0):
+            + listdir(vp, '^.+\.html$', 0) + listdir(mop, '^.+\.py$', 0): ##FIXME_NIPHLOD there's no listdir here
         data = read_locked(filename)
         items = regex_translate.findall(data)
         for item in items:

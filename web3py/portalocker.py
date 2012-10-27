@@ -43,7 +43,7 @@ Version: $Id: portalocker.py,v 1.3 2001/05/29 18:47:55 Administrator Exp $
 
 import logging
 import platform
-logger = logging.getLogger("web2py")
+logger = logging.getLogger("web3py")
 
 os_locking = None
 try:
@@ -163,6 +163,7 @@ def write_locked(filename, data):
     fp.close()
 
 if __name__ == '__main__':
+    import sys
     f = LockedFile('test.txt', mode='wb')
     f.write('test ok')
     f.close()
