@@ -1,3 +1,4 @@
+import sys
 import inspect
 import traceback
 
@@ -49,11 +50,11 @@ def smart_traceback():
 def example():
 
     class CleanerExample(Cleaner):
-        def __init__(self): print 'connecting'
-        def on_start(self): print 'pool connection'
-        def on_success(self): print 'commit'
-        def on_failure(self): print 'rollback'
-        def insert(self,**data): print 'inserting %s' % data
+        def __init__(self): sys.stdout.write('connecting\n')
+        def on_start(self): sys.stdout.write('pool connection\n')
+        def on_success(self): sys.stdout.write('commit\n')
+        def on_failure(self): sys.stdout.write('rollback\n')
+        def insert(self,**data): sys.stdout.write('inserting %s\n' % data)
 
     db = CleanerExample()
 

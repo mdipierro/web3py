@@ -30,7 +30,7 @@ if python_version == 2:
     import cPickle as pickle
 else:
     import pickle
-
+    xrange = range
 
 try:
     from Crypto.Cipher import AES

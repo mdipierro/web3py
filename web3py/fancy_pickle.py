@@ -1,5 +1,10 @@
-from cPickle import Pickler, Unpickler, UnpicklingError
-from cStringIO import StringIO
+try:
+    from cStringIO import StringIO # python 3
+    from cPickle import Pickler, Unpickler, UnpicklingError
+except ImportError:
+    from io import StringIO # python 2
+    from pickle import Pickler, Unpickler, UnpicklingError
+    long, str, unicode = int, bytes, str
 
 __all__ = ['load','loads','dump','dumps']
 
@@ -16,7 +21,7 @@ def persistent_load(persid):
         value = persid[len(KEY):]
         return value
     else:
-        raise UnpicklingError, 'Invalid persistent id'
+        raise UnpicklingError('Invalid persistent id')
 
 def dump(data,stream):
     p = Pickler(stream)
