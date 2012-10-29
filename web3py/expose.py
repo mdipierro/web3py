@@ -153,39 +153,40 @@ class expose(object):
     @staticmethod
     def run_dispatcher():
         " maps the path_info into a function call "
+        request = current.request
         expression = '%s %s://%s%s' % (
-            current.method, current.scheme, current.hostname, current.path_info)
+            request.method, request.scheme, request.hostname, request.path_info)
         for regex, obj in expose.routes_in:
             match = regex.match(expression)
             if match:
-                current.name = obj.name
-                print current.name
+                request.name = obj.name
                 output = obj.func(**match.groupdict())
                 break
         else:
             output = 'Invalid action'
 
+        response = current.response
         if isinstance(output, str):
-            current.output = [output]
+            response.output = [output]
         elif isinstance(output, dict):
             if not 'current' in output:
                 output['current'] = current
             filename = os.path.join(
                 obj.template_path,
-                obj.template.replace('<ext>',current.extension))
+                obj.template.replace('<ext>',request.extension))
             if os.path.exists(filename):
                 output = render(filename = filename,
                                 path = obj.template_path,
                                 context = output)
             else:
                 output = str(output)
-            current.output = [output]
+            response.output = [output]
         elif isinstance(output, TAG):
-            current.output = [output.as_html()]
+            response.output = [output.xml()]
         elif hasattr(output,'__iter__'):
-            current.output = output
+            response.output = output
         else:
-            current.output = [str(output)]
+            response.output = [str(output)]
 
     @staticmethod
     def scan_apps(folder):
@@ -237,18 +238,19 @@ def url(path, extension = None, args = None, vars = None,
     """
 
     q = urllib.quote
+    request = current.request
     if not '/' in path:
         if not '.' in path:
-            module = current.name.rsplit('.',1)[0]
+            module = request.name.rsplit('.',1)[0]
             path = module +'.'+path
         elif path.startswith('.'):
-            path = current.applicatio + path
+            path = request.application + path
         try:
             url = expose.routes_out[path]
         except KeyError:
             raise RuntimeError('invalid url("%s",...)' % path)
     elif path.startswith('./'):
-        prefix = expose.apps[current.application][1].prefix
+        prefix = expose.apps[request.application][1].prefix
         path = prefix + path[1:]
     if args is not None:
         if not isinstance(args,(list,tuple)):
@@ -263,9 +265,9 @@ def url(path, extension = None, args = None, vars = None,
     if vars:
         url = url + '?' + '&'.join('%s=%s' % (q(k),q(v)) for k,v in vars.iteritems())
     if scheme is True:
-        scheme = current.scheme
+        scheme = request.scheme
     if scheme:
-        host = host or current.hostname
+        host = host or request.hostname
         url = '%s/%s%s' % (scheme, host, url)
     return url
 

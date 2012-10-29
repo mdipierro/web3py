@@ -23,9 +23,8 @@ def dynamic_handler(environ, start_response):
         from .current import current # must be here to avoig global
         current.initialize(environ) # used by run_dipatcher below
         expose.run_dispatcher()
-        http = HTTP(current.status_code,current.output,
-                    headers=current.response_headers,
-                    cookies=current.response_cookies)
+        response = current.response
+        http = HTTP(response.status,response.output,response.headers,response.cookies)
     except HTTP:
         http = sys.exc_info()[1]
     return http.to(environ, start_response)

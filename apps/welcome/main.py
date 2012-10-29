@@ -1,4 +1,4 @@
-from web3py import DAL, Field, expose, tag, cat, safe, HTTP, url, Form, DALForm
+from web3py import DAL, Field, expose, tag, cat, safe, HTTP, url, Form, DALForm, current
 from web3py.session import SessionCookieManager
 from web3py.dal import Transact
 from web3py.validators import IS_NOT_EMPTY

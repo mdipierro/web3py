@@ -10,7 +10,7 @@ class BEAUTIFY(TAG):
     """
     example::
 
-        >>> BEAUTIFY(['a', 'b', {'hello': 'world'}]).as_html()
+        >>> BEAUTIFY(['a', 'b', {'hello': 'world'}]).xml()
         '<div><table><tr><td><div>a</div></td></tr><tr><td><div>b</div></td></tr><tr><td><div><table><tr><td style="font-weight:bold;vertical-align:top">hello</td><td valign="top">:</td><td><div>world</div></td></tr></table></div></td></tr></table></div>'
 
     turns any list, dictionary, etc into decent looking html.

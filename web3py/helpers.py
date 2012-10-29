@@ -154,7 +154,6 @@ class TAG(object):
             return '<%s%s>%s</%s>' % (name, ca, co, name)
 
     __repr__ = __str__
-    as_html = xml # compatibility layer
 
 class METATAG(object):
 

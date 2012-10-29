@@ -15,10 +15,10 @@
       <meta http-equiv="X-UA-Compatible" content="IE=edge{{#=not request.is_local and ',chrome=1' or ''}}">
       <![endif]-->
 
-  <title>{{#=response.title or request.application}}</title>
+  <title>{{=current.request.application}}</title>
 
   <!-- http://dev.w3.org/html5/markup/meta.name.html -->
-  <meta name="application-name" content="{{=current.application}}" />
+  <meta name="application-name" content="{{=current.request.application}}" />
 
   <!-- Speaking of Google, don't forget to set your site up:
        http://google.com/webmasters -->
@@ -30,7 +30,7 @@
         initial-scale = 1.0 retains dimensions instead of zooming out if page height > device height
         user-scalable = yes allows the user to zoom in -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  {{def URL(*a): return '/'+current.application+'/'+'/'.join(a)}}
+  {{def URL(*a): return '/'+current.request.application+'/'+'/'.join(a)}}
   <link rel="shortcut icon" href="{{=URL('static','images/favicon.ico')}}" type="image/x-icon">
   <link rel="apple-touch-icon" href="{{=URL('static','images/favicon.png')}}">
 

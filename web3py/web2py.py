@@ -34,13 +34,16 @@ class Response(Storage):
     css_template = '<link href="%s" rel="stylesheet" type="text/css" />'
     js_template = '<script src="%s" type="text/javascript"></script>'
 
-    def __init__(self):
+    def __init__(self,response):
+        self.status = response.status
+        self.cookies = response.cookies
+        self.headers = response.headers
         self.body = cStringIO.StringIO()
         self.files = []
         self.meta = Storage()
         self.delimiters = ('{{','}}')
     def write(self,data,escape=True):
-        return self.body.write(data.as_html() if isinstance(data,TAG) else xmlescape(str(data)) if escape else str(data))
+        return self.body.write(data.xml() if isinstance(data,TAG) else xmlescape(str(data)) if escape else str(data))
     def include_meta(self):
         s = '\n'.join(
             '<meta name="%s" content="%s" />\n' % (k, xmlescape(v))
@@ -56,7 +59,7 @@ class Response(Storage):
         self.write(s, escape=False)
 
 def build_environment(current,c,f,e,args):
-    a = current.application
+    a = current.request.application
     environment = {}
     for name in 'A,B,BODY,BR,CENTER,CLEANUP,CRYPT,DAL,DIV,EM,EMBED,FIELDSET,FORM,H1,H2,H3,H4,H5,H6,HEAD,HR,HTML,I,IFRAME,IMG,INPUT,LABEL,LEGEND,LI,LINK,LOAD,MARKMIN,META,OBJECT,OL,ON,OPTGROUP,OPTION,P,PRE,SCRIPT,SELECT,SPAN,STYLE,TABLE,TBODY,TD,TEXTAREA,TFOOT,TH,THEAD,TITLE,TR,TT,UL'.split(','):
         environment[name] = tag[name]
@@ -65,39 +68,20 @@ def build_environment(current,c,f,e,args):
     environment['XML'] = safe
     environment['redirect'] = HTTP.redirect
 
-    environment['request'] = current.request = request = Storage()
-    environment['response'] = current.response = response = Response()
-
-    environment['session'] = current.session
-    request.env = current.env
-    request.now = current.now
-    request.application = a
+    environment['request'] = request = current.request
+    environment['response'] = response = current.response = Response(current.response)
+    environment['session'] = session = current.session
     request.controller = c
     request.function = f
     request.extension = e
     request.args = ListStorage(args)
-    request.is_http = current.method == 'https'
-    request.client = current.env.remote_addr
-    request.cookies = current.request_cookies
-    request.get_vars = current.get_vars
-    request.post_vars = current.post_vars
-    request.vars = copy.copy(current.get_vars)
+    request.is_http = request.method == 'https'
+    request.client = request.env.remote_addr
     request.is_local = True # FIXME
     environment['MENU'] = MENU
     environment['BEAUTIFY'] = BEAUTIFY
-    response.view = None # THIS DOES NOT WORK
+    response.view = None # THIS DOES NOT WORK SHOULD BE IN EXPOSE?
     environment['URL'] = lambda f=None,c=None,a=None,r=request,args=[],vars={}:URL(f,c,a,r,args,vars)
-
-    for key,value in current.post_vars.iteritems():
-        if not key in request.vars:
-            request.vars[key] = value
-        else:
-            if not isinstance(request.vars[key],list):
-                request.vars[key] = [request.vars[key]]
-            if isinstance(value,list):
-                request.vars[key]+=value
-            else:
-                request.vars[key]+=[value]
     return environment
 
 class ListStorage(list):
@@ -106,8 +90,9 @@ class ListStorage(list):
 
 
 def web2py_handler():
-    folder = 'apps'+os.sep+current.application
-    items = current.path_info.split('/')
+    request = current.request
+    folder = 'apps'+os.sep+request.application
+    items = request.path_info.split('/')
     controller = items[2] if len(items)>2 else 'default'
     function = items[3] if len(items)>3 else 'index.html'
     extension = 'html'
@@ -129,5 +114,5 @@ def web2py_handler():
             template = os.path.join(tpath,'generic.'+extension)
         output = render(filename = template, path = tpath, context = old_env)
     elif isinstance(output,TAG):
-        output = output.as_html()
+        output = output.xml()
     return output

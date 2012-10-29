@@ -75,8 +75,8 @@ class MENU(TAG):
         select['_onchange'] = 'window.location=this.value'
         return select
 
-    def as_html(self):
+    def xml(self):
         if self['mobile']:
-            return self.serialize_mobile(self.data, 0).as_html()
+            return self.serialize_mobile(self.data, 0).xml()
         else:
-            return self.serialize(self.data, 0).as_html()
+            return self.serialize(self.data, 0).xml()

@@ -83,7 +83,7 @@ class Form(TAG):
         self.formname = 'form-'+hashlib.md5(
             ''.join(f.name for f in fields)).hexdigest()
 
-    def process(self, keepvalues = False, csrf_methods=['POST']):
+    def process(self, vars = None, keepvalues = False, csrf_methods=['POST']):
 
         if not self.processed:
             self.processed = True
@@ -98,10 +98,12 @@ class Form(TAG):
                     self.formkey = 'not-assigned' # but be != None
 
             # get appropriate input variables
-            if self.attributes['_method']=='POST':
-                self.input_vars = Storage(current.post_vars)
+            if vars is not None:
+                self.input_vars = vars
+            elif self.attributes['_method']=='POST':
+                self.input_vars = Storage(current.request.post_vars)
             else:
-                self.input_vars = Storage(current.get_vars)
+                self.input_vars = Storage(current.request.get_vars)
 
             # validate input
             if self.input_vars._formkey == self.formkey:
@@ -186,8 +188,8 @@ class Form(TAG):
             newform.append(tag.input(_name=key,_type='hidden',_value=value))
         return newform
 
-    def as_html(self):
-        return self.attributes['formstyle'](self).as_html()
+    def xml(self):
+        return self.attributes['formstyle'](self).xml()
 
 class DALForm(Form):
     def __init__(self, table, record=None, record_id=None, **attributes):
@@ -198,9 +200,8 @@ class DALForm(Form):
         Form.__init__(self,*fields,**attributes)
         self.id_prefix = table._tablename
 
-    def process(self, current, keepvalues = False, csrf_token=True):
-        orm.process(self, current, keepvalue = True,
-                    csrf_token = csrf_token)
+    def process(self, vars = None, keepvalues = False, csrf_methods = ['POST']):
+        Form.process(self, vars, keepvalues = True, csrf_methods = csrf_methods)
         if self.accepted:
             if self.record:
                 self.record.update_record(**self.vars)

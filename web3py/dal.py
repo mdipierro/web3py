@@ -176,18 +176,14 @@ if PYTHON_VERSION == 2:
     import cStringIO as StringIO
     import copy_reg as copyreg
     hashlib_md5 = hashlib.md5
+    bytes, unicode = str, unicode
 else:
     import pickle
     from io import StringIO as StringIO    
     import copyreg
     long = int
     hashlib_md5 = lambda s: hashlib.md5(bytes(s,'utf8'))
-    unicode = str
-
-try:
-    from cleaners import Cleaner
-except ImportError:
-    class Cleaner(object): pass
+    bytes, unicode = bytes, str
 
 CALLABLETYPES = (types.LambdaType, types.FunctionType,
                  types.BuiltinFunctionType,
@@ -1777,8 +1773,8 @@ class BaseAdapter(ConnectionPool):
                 obj = obj.isoformat()[:10]
             else:
                 obj = str(obj)
-        if not isinstance(obj,str):
-            obj = str(obj)
+        if not isinstance(obj,bytes):
+            obj = bytes(obj)
         try:
             obj.decode(self.db_codec)
         except:
@@ -6656,9 +6652,6 @@ class DAL(object):
         db._db_uid = db_uid
         return db
 
-    def reconnect(self):
-        self._adapter.reconnect()
-
     @staticmethod
     def set_folder(folder):
         """
@@ -8629,7 +8622,7 @@ class Field(Expression):
 
     def formatter(self, value):
         requires = self.requires
-        if value is None or not requires:
+        if not requires:
             return value
         if not isinstance(requires, (list, tuple)):
             requires = [requires]
@@ -9360,17 +9353,6 @@ class Rows(object):
                 import gluon.contrib.simplejson as simplejson
             return simplejson.dumps(items)
 
-class Transact(Cleaner):
-    def __init__(self,db):
-        self.db = db
-    def on_start(self):
-        self.db._adapter.reconnect()
-    def on_success(self):
-        self.db._adapter.commit()
-        self.db._adapter.close()
-    def on_failure(self):
-        self.db._adapter.rollback()
-        self.db._adapter.close()
 
 ################################################################################
 # dummy function used to define some doctests

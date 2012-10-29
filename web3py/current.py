@@ -17,12 +17,9 @@ __all__ = ['current']
 
 # global object exposed to apps
 
-class Current(threading.local):
-
-    def initialize(self,environ):
-        self.__dict__.clear()
+class Request(object):
+    def __init__(self, environ):
         self.environ = environ
-        self.status_code = 200
         self.scheme = 'https' if \
             environ.get('wsgi.url_scheme','').lower() == 'https' or \
             environ.get('HTTP_X_FORWARDED_PROTO','').lower() == 'https' or \
@@ -35,9 +32,6 @@ class Current(threading.local):
         self.now = environ['w3p.now']
         self.application = environ['w3p.application']
         self.extension = (self.path_info.rsplit('.',1)+['html'])[1]
-        self.response_cookies = SimpleCookie()
-        self.response_headers = {'Content-Type':contenttype(self.path_info,'text/html')}
-        self.session = None
 
     def _parse_get_vars(self):
         query_string = self.environ.get('QUERY_STRING','')
@@ -62,18 +56,37 @@ class Current(threading.local):
                 if isinstance(value,list) and len(value)==1:
                     post_vars[key] = value[0]
 
+    def _parse_all_vars(self):
+        self._vars = copy.copy(self.get_vars)
+        for key,value in self.post_vars.iteritems():
+            if not key in self._vars:
+                self._vars[key] = value
+            else:
+                if not isinstance(self._vars[key],list):
+                    self._vars[key] = [self._vars[key]]
+                self._vars[key] += value if isinstance(value,list) else [value]
+
     @property
     def get_vars(self):
         " lazily parse the query string into get_vars "
         if not hasattr(self,'_get_vars'):
             self._parse_get_vars()
         return self._get_vars
+
     @property
     def post_vars(self):
         " lazily parse the request body into post_vars "
         if not hasattr(self,'_post_vars'):
             self._parse_post_vars()
         return self._post_vars
+
+    @property
+    def vars(self):
+        " lazily parse the request body into post_vars "
+        if not hasattr(self,'_vars'):
+            self._parse_all_vars()
+        return self._vars
+
     @property
     def env(self):
         """
@@ -84,19 +97,42 @@ class Current(threading.local):
             self._env = Storage((k.lower().replace('.','_'),v)
                                 for (k,v) in self.environ.iteritems())
         return self._env
+
     @property
-    def request_cookies(self):
+    def cookies(self):
         " lazily parse the request cookies "
         if not hasattr(self,'_request_cookies'):
-            self._request_cookies = SimpleCookie()
-            self._request_cookies.load(self.environ.get('HTTP_COOKIE',''))
-        return self._request_cookies
+            self._cookies = SimpleCookie()
+            self._cookies.load(self.environ.get('HTTP_COOKIE',''))
+        return self._cookies
+
+    __getitem__ = object.__getattribute__
+    __setitem__ = object.__setattr__
+
+class Response(object):
+    def __init__(self, environ):
+        self.status = 200
+        self.cookies = SimpleCookie()
+        self.headers = {'Content-Type':contenttype(environ['PATH_INFO'],'text/html')}
+
+    __getitem__ = object.__getattribute__
+    __setitem__ = object.__setattr__
+        
+class Current(threading.local):
+
+    def initialize(self,environ):
+        self.__dict__.clear()
+        self.environ = environ
+        self.request = Request(environ)
+        self.response = Response(environ)
+        self.session = None
+
     @property
     def T(self):
         " lazily allocate the T object "
         if not hasattr(self,'_t'):
-            self._t = translator(os.path.join('apps',self.application,'languages'),
-                                 self.environ.get('HTTP_ACCEPT_LANGUAGE'))
+            langpath = os.path.join('apps', self.request.application, 'languages')
+            self._t = translator(langpath, self.environ.get('HTTP_ACCEPT_LANGUAGE'))
         return self._t
 
 
