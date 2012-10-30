@@ -9353,6 +9353,20 @@ class Rows(object):
                 import gluon.contrib.simplejson as simplejson
             return simplejson.dumps(items)
 
+try:
+    from .cleaners import Cleaner
+    class Transact(Cleaner):
+        def __init__(self,db):
+            self.db = db
+        def on_start(self):
+            self.db._adapter.reconnect()
+        def on_success(self):
+            self.db.commit()
+            self.db._adapter.close()
+        def on_failure(self):
+            self.db.rollback()
+            self.db._adapter.close()
+except ImportError: pass
 
 ################################################################################
 # dummy function used to define some doctests

@@ -1,0 +1,16 @@
+timestamp: 2012-10-26T15:35:31.033385
+CREATE TABLE error(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    app CHAR(512),
+    error_timestamp CHAR(512),
+    remote_addr CHAR(512),
+    traceback CHAR(512),
+    frames TEXT
+);
+success!
+timestamp: 2012-10-26T15:35:31.038146
+CREATE TABLE person(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name CHAR(512)
+);
+success!

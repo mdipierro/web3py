@@ -11,17 +11,20 @@ from .template import render
 from .current import current
 from .menu import MENU
 from .beautify import BEAUTIFY
+from .forms import Form
+from .dal import DAL, Field
+from .dal import validators
 
 def URL(f,c,a,r=None,args=[],vars={}):
     if f is None:
-        f,c,a=f.funciton,r.controller,r.application
+        f,c,a=r.function,r.controller,r.application
     elif c is None:
         c,a=r.controller,r.application
     elif a is None:
         f,c,a=c,f,r.application
     else:
         f,c,a = a,c,f
-    q = urllib.quote
+    q = lambda s: urllib.quote(str(s))
     url = '/%s/%s/%s' % (a,c,f)
     if args:
         if not isinstance(args,(list,tuple)): args=[args]
@@ -59,7 +62,7 @@ class Response(Storage):
         self.write(s, escape=False)
 
 def build_environment(current,c,f,e,args):
-    a = current.request.application
+    a = current.request.application    
     environment = {}
     for name in 'A,B,BODY,BR,CENTER,CLEANUP,CRYPT,DAL,DIV,EM,EMBED,FIELDSET,FORM,H1,H2,H3,H4,H5,H6,HEAD,HR,HTML,I,IFRAME,IMG,INPUT,LABEL,LEGEND,LI,LINK,LOAD,MARKMIN,META,OBJECT,OL,ON,OPTGROUP,OPTION,P,PRE,SCRIPT,SELECT,SPAN,STYLE,TABLE,TBODY,TD,TEXTAREA,TFOOT,TH,THEAD,TITLE,TR,TT,UL'.split(','):
         environment[name] = tag[name]
@@ -74,12 +77,20 @@ def build_environment(current,c,f,e,args):
     request.controller = c
     request.function = f
     request.extension = e
+    request.folder = os.path.join('apps',a)
     request.args = ListStorage(args)
-    request.is_http = request.method == 'https'
+    request.is_https = request.method == 'https'
     request.client = request.env.remote_addr
     request.is_local = True # FIXME
+    environment['DAL'] = DAL
+    environment['Field'] = Field
+    environment['TAG'] = tag
     environment['MENU'] = MENU
     environment['BEAUTIFY'] = BEAUTIFY
+    environment['SQLFORM'] = sqlform = Storage()
+    for key in dir(validators):
+        environment[key] = getattr(validators,key)
+    sqlform.factory = Form
     response.view = None # THIS DOES NOT WORK SHOULD BE IN EXPOSE?
     environment['URL'] = lambda f=None,c=None,a=None,r=request,args=[],vars={}:URL(f,c,a,r,args,vars)
     return environment
@@ -101,9 +112,9 @@ def web2py_handler():
     args = items[4:]
     environment = build_environment(current,controller,function,
                                     extension,args)
-    old_env = copy.copy(environment)
     for model in sorted(glob.glob(os.path.join(folder,'models','*.py'))):
-        execfile(model,environment,{})
+        execfile(model,environment)
+    old_env = copy.copy(environment)
     execfile(os.path.join(folder,'controllers',controller+'.py'),environment)
     output = environment[function]()
     if isinstance(output,dict):

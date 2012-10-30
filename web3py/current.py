@@ -1,6 +1,7 @@
 import os
 import cgi
 import sys
+import copy
 import threading
 
 from .storage import Storage
