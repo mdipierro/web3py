@@ -83,14 +83,14 @@ class Form(TAG):
         self.formname = 'form-'+hashlib.md5(
             ''.join(f.name for f in fields)).hexdigest()
 
-    def process(self, vars = None, keepvalues = False, csrf_methods=['POST']):
+    def process(self, vars = None, keepvalues = False, csrf_safe = 'auto'):
 
         if not self.processed:
             self.processed = True
             method = self.attributes['_method']
 
             # CRSF protection logic
-            if method in csrf_methods:
+            if csrf_safe is True or (csrf_safe == 'auto' and method is 'POST'):
                 if self.formname in current.session:
                     token = current.session[self.formname]
                     self.formkey = self.formname + ':' + token
@@ -200,8 +200,8 @@ class DALForm(Form):
         Form.__init__(self,*fields,**attributes)
         self.id_prefix = table._tablename
 
-    def process(self, vars = None, keepvalues = False, csrf_methods = ['POST']):
-        Form.process(self, vars, keepvalues = True, csrf_methods = csrf_methods)
+    def process(self, vars = None, keepvalues = False, csrf_safe = 'auto'):
+        Form.process(self, vars, keepvalues = True, csrf_safe = csrf_safe)
         if self.accepted:
             if self.record:
                 self.record.update_record(**self.vars)
@@ -213,7 +213,42 @@ class DALForm(Form):
                     else field.default
                 self.input_vars[field.name] = field.formatter(value)
         return self
-
+    
+    """
+    # do we want this?
+    @property
+    def custom(self):
+        if not hasattr(self,'_custom'):
+            self._custom = custom = Storage()
+            custom.dspval = Storage()
+            custom.inpval = Storage()
+            custom.label = Storage()
+            custom.comment = Storage()
+            custom.widget = Storage()
+            for field in self.fields:
+                name = field.name
+                custom.dspval[name] = self.input_vars[field.name]
+                custom.inpval[name] = self.input_vars[field.name]
+                custom.label[name] = field.label
+                custom.comment[name] = field.comment                
+                custom.widget[name] = field.widget(name,value,_id=id) \
+                    if field.widget else \
+                    getattr(form,'widget_'+field.type)(name,value,_id=id)
+            custom.submit = tag.input(_type="submit",
+                                      value=self.attributes['submit'])
+            custom.begin = '<form action="%s" method="%s" enctype="%s">' % \
+                (self.attributes['_action'],
+                 self.attributes['_method'],
+                 self.attributes['_enctype'])
+            hidden = cat()
+            if form.formkey:
+                hidden.append(tag.input(_name='_formkey',_type='hidden',
+                                        _value=form.formkey))
+            for key, value in attr.get('hidden',{}).iteritems():
+                hidden.append(tag.input(_name=key,_type='hidden',_value=value))
+            custom.end = '%s</form>' % hidden.xml()
+        return self._custom
+    """
 
 def test():
     from dal import Field
