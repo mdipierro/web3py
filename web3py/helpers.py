@@ -1,8 +1,11 @@
 import re
 
 from .sanitizer import sanitize
+import threading
 
 __all__ = ['tag', 'cat', 'safe']
+
+THREAD_LOCAL = threading.local()
 
 # web2py style helpers
 
@@ -46,6 +49,17 @@ class TAG(object):
         self.parent = None
         self.components = []
         self.attributes = {}
+        if hasattr(THREAD_LOCAL, "stack") and THREAD_LOCAL.stack:
+            THREAD_LOCAL.stack[-1].append(self)
+
+    def __enter__(self):
+        if not hasattr(THREAD_LOCAL, "stack"):
+            THREAD_LOCAL.stack = []
+        THREAD_LOCAL.stack.append(self)
+        return self
+
+    def __exit__(self, type, value, traceback):
+        THREAD_LOCAL.stack.pop(-1)        
 
     @staticmethod
     def wrap(component,rules):
