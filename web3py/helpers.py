@@ -60,11 +60,7 @@ class TAG(object):
         return self
 
     def __exit__(self, type, value, traceback):
-<<<<<<< HEAD
         THREAD_LOCAL.stack.pop(-1)
-=======
-        THREAD_LOCAL.stack.pop(-1)        
->>>>>>> 41a5c0f7e47e87e2bafdb5bef1f85df562803d8d
 
     @staticmethod
     def wrap(component,rules):
